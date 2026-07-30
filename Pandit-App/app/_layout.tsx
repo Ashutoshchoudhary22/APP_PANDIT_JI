@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import { AuthBootstrap } from '@/components/AuthBootstrap';
 import { AuthSessionHandler } from '@/components/AuthSessionHandler';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/providers/AuthProvider';
@@ -22,7 +23,8 @@ export default function RootLayout() {
         <AuthProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <AuthSessionHandler />
-          <Stack>
+          <AuthBootstrap />
+          <Stack initialRouteName="(tabs)">
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="sign-in" options={{ headerShown: false }} />
             <Stack.Screen name="sign-up" options={{ headerShown: false }} />

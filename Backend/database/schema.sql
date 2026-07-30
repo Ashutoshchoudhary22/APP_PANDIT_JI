@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS signup_otps (
   mobile VARCHAR(15) NOT NULL,
   email VARCHAR(150) NULL,
   password_hash VARCHAR(255) NOT NULL,
-  account_type ENUM('customer','pandit') NOT NULL DEFAULT 'customer',
+  account_type ENUM('customer','pandit','admin','superadmin') NOT NULL DEFAULT 'customer',
   otp VARCHAR(6) NOT NULL,
   expires_at DATETIME NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

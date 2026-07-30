@@ -9,6 +9,7 @@ export default function TabLayout() {
     <>
       <TabAuthGuard />
       <Tabs
+        initialRouteName="index"
         tabBar={(props) => <PanditTabBar {...props} />}
         screenOptions={{
           headerShown: false,

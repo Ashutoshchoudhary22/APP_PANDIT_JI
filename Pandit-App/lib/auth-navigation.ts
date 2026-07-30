@@ -1,14 +1,11 @@
 import { Href, router } from 'expo-router';
 
 export function goToGetStarted() {
-  if (router.canDismiss?.()) {
-    router.dismissAll();
-  }
   router.replace('/' as Href);
 }
 
 export function goToSignIn() {
-  router.replace('/sign-in' as Href);
+  router.push('/sign-in' as Href);
 }
 
 export function goToDashboard() {

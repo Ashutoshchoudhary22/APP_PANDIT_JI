@@ -71,13 +71,18 @@ async function initDb() {
         mobile VARCHAR(15) NOT NULL,
         email VARCHAR(150) NULL,
         password_hash VARCHAR(255) NOT NULL,
-        account_type ENUM('customer','pandit') NOT NULL DEFAULT 'customer',
+        account_type ENUM('customer','pandit','admin','superadmin') NOT NULL DEFAULT 'customer',
         otp VARCHAR(6) NOT NULL,
         expires_at DATETIME NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_signup_otps_email (email),
         INDEX idx_signup_otps_mobile (mobile)
       )
+    `);
+
+    await connection.query(`
+      ALTER TABLE signup_otps
+      MODIFY COLUMN account_type ENUM('customer','pandit','admin','superadmin') NOT NULL DEFAULT 'customer'
     `);
 
     await connection.query(`

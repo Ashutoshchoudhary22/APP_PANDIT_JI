@@ -81,7 +81,13 @@ exports.signup = async (req, res) => {
 
     const normalizedMobile = mobile.trim();
     const normalizedEmail = email?.trim().toLowerCase() || null;
-    const accountType = role === 'pandit' ? 'pandit' : 'customer';
+    const normalizedRole = role?.trim()?.toLowerCase();
+    const accountType =
+      normalizedRole === 'pandit' ||
+      normalizedRole === 'admin' ||
+      normalizedRole === 'superadmin'
+        ? normalizedRole
+        : 'customer';
 
     const existing = await findExistingUser(normalizedMobile, normalizedEmail);
     if (existing) {
@@ -194,7 +200,7 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    const userRole = record.account_type === 'pandit' ? 'pandit' : 'customer';
+    const userRole = record.account_type;
 
     const [result] = await pool.query(
       `INSERT INTO users (role, mobile, email, password_hash, status)
