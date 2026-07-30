@@ -5,6 +5,8 @@ require('dotenv').config();
 const initDb = require('./config/initDb');
 const authRoutes = require('./routes/authRoutes');
 const customerProfileRoutes = require('./routes/customerProfileRoutes');
+const panditProfileRoutes = require('./routes/panditProfileRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 const app = express();
 
@@ -20,6 +22,8 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/customer-profiles', customerProfileRoutes);
+app.use('/api/pandit-profiles', panditProfileRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 const PORT = process.env.PORT || 5300;
 

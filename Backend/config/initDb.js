@@ -1,6 +1,22 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+async function ensureColumn(connection, table, column, definition) {
+  const [rows] = await connection.query(
+    `SELECT COUNT(*) AS count
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = ?
+       AND COLUMN_NAME = ?`,
+    [table, column],
+  );
+
+  if (rows[0].count === 0) {
+    await connection.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${definition}`);
+    console.log(`Added column ${table}.${column}`);
+  }
+}
+
 async function initDb() {
   const dbName = process.env.DB_NAME || 'app';
 
@@ -20,16 +36,8 @@ async function initDb() {
   const connection = await pool.getConnection();
 
   try {
-    await connection.query('DROP TABLE IF EXISTS pandit_profiles');
-    await connection.query('DROP TABLE IF EXISTS customer_profiles');
-    await connection.query('DROP TABLE IF EXISTS customer_password_resets');
-    await connection.query('DROP TABLE IF EXISTS password_resets');
-    await connection.query('DROP TABLE IF EXISTS signup_otps');
-    await connection.query('DROP TABLE IF EXISTS customers');
-    await connection.query('DROP TABLE IF EXISTS users');
-
     await connection.query(`
-      CREATE TABLE users (
+      CREATE TABLE IF NOT EXISTS users (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         role ENUM('customer','pandit','admin','superadmin') NOT NULL,
         mobile VARCHAR(15) NOT NULL UNIQUE,
@@ -46,7 +54,7 @@ async function initDb() {
     `);
 
     await connection.query(`
-      CREATE TABLE password_resets (
+      CREATE TABLE IF NOT EXISTS password_resets (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         user_id BIGINT UNSIGNED NOT NULL,
         token VARCHAR(255) NOT NULL UNIQUE,
@@ -58,7 +66,7 @@ async function initDb() {
     `);
 
     await connection.query(`
-      CREATE TABLE signup_otps (
+      CREATE TABLE IF NOT EXISTS signup_otps (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         mobile VARCHAR(15) NOT NULL,
         email VARCHAR(150) NULL,
@@ -73,7 +81,7 @@ async function initDb() {
     `);
 
     await connection.query(`
-      CREATE TABLE customer_profiles (
+      CREATE TABLE IF NOT EXISTS customer_profiles (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         customer_id BIGINT UNSIGNED NOT NULL UNIQUE,
         first_name VARCHAR(100),
@@ -91,7 +99,7 @@ async function initDb() {
     `);
 
     await connection.query(`
-      CREATE TABLE pandit_profiles (
+      CREATE TABLE IF NOT EXISTS pandit_profiles (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         user_id BIGINT UNSIGNED NOT NULL UNIQUE,
         name VARCHAR(150) NOT NULL,
@@ -114,6 +122,15 @@ async function initDb() {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
+
+    await ensureColumn(connection, 'pandit_profiles', 'aadhar_image', 'VARCHAR(500) NULL');
+    await ensureColumn(connection, 'pandit_profiles', 'pandit_certificate_image', 'VARCHAR(500) NULL');
+    await ensureColumn(connection, 'pandit_profiles', 'bank_account_holder', 'VARCHAR(150) NULL');
+    await ensureColumn(connection, 'pandit_profiles', 'bank_account_number', 'VARCHAR(30) NULL');
+    await ensureColumn(connection, 'pandit_profiles', 'bank_ifsc', 'VARCHAR(20) NULL');
+    await ensureColumn(connection, 'pandit_profiles', 'bank_name', 'VARCHAR(150) NULL');
+    await ensureColumn(connection, 'pandit_profiles', 'passbook_image', 'VARCHAR(500) NULL');
+    await ensureColumn(connection, 'pandit_profiles', 'profile_image', 'VARCHAR(500) NULL');
 
     console.log('Database tables ready');
   } finally {

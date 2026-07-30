@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import {
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +10,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CloudImage } from '@/components/CloudImage';
+import { DEMO_IMAGES } from '@/constants/cloudinary';
 import { HomeColors as C } from '@/constants/home-theme';
 
 const CATEGORIES = [
@@ -32,7 +33,7 @@ const NEARBY_PANDITS = [
     distance: '2.6 km',
     languages: 'Hindi, English',
     price: '₹1,500',
-    image: 'https://i.pravatar.cc/150?img=12',
+    image: DEMO_IMAGES.pandit1,
   },
   {
     id: '2',
@@ -42,7 +43,7 @@ const NEARBY_PANDITS = [
     distance: '3.2 km',
     languages: 'Hindi, Sanskrit',
     price: '₹2,000',
-    image: 'https://i.pravatar.cc/150?img=15',
+    image: DEMO_IMAGES.pandit2,
   },
   {
     id: '3',
@@ -52,15 +53,15 @@ const NEARBY_PANDITS = [
     distance: '4.1 km',
     languages: 'Hindi, English',
     price: '₹1,800',
-    image: 'https://i.pravatar.cc/150?img=32',
+    image: DEMO_IMAGES.pandit3,
   },
 ];
 
 const POPULAR_SERVICES = [
-  { id: '1', name: 'Marriage Puja', price: '₹5,101', emoji: '💒' },
-  { id: '2', name: 'Griha Pravesh', price: '₹3,501', emoji: '🏡' },
-  { id: '3', name: 'Rudrabhishek', price: '₹2,101', emoji: '🕉️' },
-  { id: '4', name: 'Satyanarayan Katha', price: '₹1,501', emoji: '📖' },
+  { id: '1', name: 'Marriage Puja', price: '₹5,101', image: DEMO_IMAGES.serviceMarriage },
+  { id: '2', name: 'Griha Pravesh', price: '₹3,501', image: DEMO_IMAGES.serviceGriha },
+  { id: '3', name: 'Rudrabhishek', price: '₹2,101', image: DEMO_IMAGES.banner },
+  { id: '4', name: 'Satyanarayan Katha', price: '₹1,501', image: DEMO_IMAGES.avatar },
 ];
 
 const TRUST_FEATURES = [
@@ -108,8 +109,9 @@ export function CustomerHome({
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Image
-              source={{ uri: 'https://i.pravatar.cc/150?img=33' }}
+            <CloudImage
+              source={DEMO_IMAGES.customer}
+              preset="avatar"
               style={styles.avatar}
             />
             <View style={styles.headerText}>
@@ -168,7 +170,7 @@ export function CustomerHome({
             </Pressable>
           </View>
           <View style={styles.bannerImageWrap}>
-            <Text style={styles.bannerEmoji}>🪔</Text>
+            <CloudImage source={DEMO_IMAGES.banner} preset="banner" style={styles.bannerImage} />
           </View>
         </View>
 
@@ -200,7 +202,7 @@ export function CustomerHome({
           {NEARBY_PANDITS.map((pandit) => (
             <Pressable key={pandit.id} style={styles.panditCard}>
               <View style={styles.panditImageWrap}>
-                <Image source={{ uri: pandit.image }} style={styles.panditImage} />
+                <CloudImage source={pandit.image} preset="panditCard" style={styles.panditImage} />
                 <View style={styles.verifiedBadge}>
                   <Ionicons name="checkmark-circle" size={12} color="#fff" />
                   <Text style={styles.verifiedText}>Verified</Text>
@@ -236,7 +238,7 @@ export function CustomerHome({
           {POPULAR_SERVICES.map((service) => (
             <Pressable key={service.id} style={styles.serviceCard}>
               <View style={styles.serviceImageWrap}>
-                <Text style={styles.serviceEmoji}>{service.emoji}</Text>
+                <CloudImage source={service.image} preset="service" style={styles.serviceImage} />
               </View>
               <Text style={styles.serviceName}>{service.name}</Text>
               <Text style={styles.servicePrice}>{service.price} onwards</Text>
@@ -417,11 +419,13 @@ const styles = StyleSheet.create({
   },
   bannerImageWrap: {
     width: 90,
-    alignItems: 'center',
-    justifyContent: 'center',
+    height: 90,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
-  bannerEmoji: {
-    fontSize: 64,
+  bannerImage: {
+    width: '100%',
+    height: '100%',
   },
   categoriesRow: {
     gap: 14,
@@ -569,13 +573,12 @@ const styles = StyleSheet.create({
     width: 130,
     height: 100,
     borderRadius: 14,
-    backgroundColor: C.bannerBg,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     marginBottom: 8,
   },
-  serviceEmoji: {
-    fontSize: 40,
+  serviceImage: {
+    width: '100%',
+    height: '100%',
   },
   serviceName: {
     fontSize: 13,

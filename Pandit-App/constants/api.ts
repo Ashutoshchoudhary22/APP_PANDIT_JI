@@ -41,4 +41,10 @@ export const AUTH_ENDPOINTS = {
   resendOtp: '/api/auth/resend-otp',
   login: '/api/auth/login',
   forgotPassword: '/api/auth/forgot-password',
+  me: '/api/auth/me',
+} as const;
+
+export const UPLOAD_ENDPOINTS = {
+  status: '/api/uploads/status',
+  image: '/api/uploads/image',
 } as const;

@@ -108,3 +108,10 @@ export async function forgotPasswordApi(payload: ForgotPasswordPayload) {
   );
   return data;
 }
+
+export async function getMeApi() {
+  const { data } = await apiClient.get<{ success: boolean; data: { user: AuthUser } }>(
+    AUTH_ENDPOINTS.me,
+  );
+  return data;
+}

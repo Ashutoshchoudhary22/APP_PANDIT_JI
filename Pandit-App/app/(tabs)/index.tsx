@@ -1,5 +1,10 @@
 import { OnboardingCarousel } from '@/components/OnboardingSlide';
-import { router } from 'expo-router';
+import { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+
+import { DashboardColors as C } from '@/constants/dashboard-theme';
+import { goToDashboard, goToSignIn } from '@/lib/auth-navigation';
+import { useAuth } from '@/providers/AuthProvider';
 
 const SLIDES = [
   {
@@ -40,12 +45,28 @@ const SLIDES = [
 ];
 
 export default function HomeScreen() {
+  const { token, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && token) {
+      goToDashboard();
+    }
+  }, [isLoading, token]);
+
+  if (isLoading || token) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFDF8' }}>
+        <ActivityIndicator size="large" color={C.primary} />
+      </View>
+    );
+  }
+
   return (
     <OnboardingCarousel
       slides={SLIDES}
       buttonText="Get Started"
       lastButtonText="Get Started"
-      onFinish={() => router.push('/sign-in')}
+      onFinish={goToSignIn}
     />
   );
 }

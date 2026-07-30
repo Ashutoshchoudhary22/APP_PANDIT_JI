@@ -42,3 +42,8 @@ export const AUTH_ENDPOINTS = {
   login: '/api/auth/login',
   forgotPassword: '/api/auth/forgot-password',
 } as const;
+
+export const UPLOAD_ENDPOINTS = {
+  status: '/api/uploads/status',
+  image: '/api/uploads/image',
+} as const;

@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DashboardColors as C } from '@/constants/dashboard-theme';
+import { useAuth } from '@/providers/AuthProvider';
 
 const TAB_CONFIG: Record<
   string,
@@ -19,6 +20,13 @@ const TAB_CONFIG: Record<
 
 export function PanditTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { token } = useAuth();
+  const currentRoute = state.routes[state.index];
+  const isPublicScreen = currentRoute.name === 'index' || currentRoute.name === 'explore';
+
+  if (isPublicScreen || !token) {
+    return null;
+  }
 
   return (
     <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 8) }]}>

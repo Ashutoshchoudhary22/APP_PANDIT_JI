@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { ReactNode } from 'react';
 import {
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,6 +10,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CloudImage } from '@/components/CloudImage';
+import { DEMO_IMAGES } from '@/constants/cloudinary';
 import { DashboardColors as C } from '@/constants/dashboard-theme';
 
 type PanditDashboardProps = {
@@ -144,8 +145,9 @@ export function PanditDashboard({
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.avatarWrap}>
-              <Image
-                source={{ uri: 'https://i.pravatar.cc/150?img=12' }}
+              <CloudImage
+                source={DEMO_IMAGES.pandit1}
+                preset="avatar"
                 style={styles.avatar}
               />
               {isOnline ? <View style={styles.onlineDot} /> : null}
@@ -235,8 +237,9 @@ export function PanditDashboard({
         <SectionHeader title="New Booking Requests" actionLabel="View All (2) >" />
         <View style={styles.bookingCard}>
           <View style={styles.bookingCardTop}>
-            <Image
-              source={{ uri: 'https://i.pravatar.cc/150?img=33' }}
+            <CloudImage
+              source={DEMO_IMAGES.customer}
+              preset="avatar"
               style={styles.customerAvatar}
             />
             <View style={styles.bookingInfo}>
@@ -296,8 +299,9 @@ export function PanditDashboard({
         <SectionHeader title="Recent Reviews" actionLabel="View All >" />
         <View style={styles.reviewCard}>
           <View style={styles.reviewHeader}>
-            <Image
-              source={{ uri: 'https://i.pravatar.cc/150?img=45' }}
+            <CloudImage
+              source={DEMO_IMAGES.customer}
+              preset="avatar"
               style={styles.customerAvatar}
             />
             <View style={styles.reviewHeaderText}>

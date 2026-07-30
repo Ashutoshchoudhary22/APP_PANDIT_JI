@@ -479,3 +479,31 @@ exports.resetPassword = async (req, res) => {
     });
   }
 };
+
+exports.me = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      'SELECT id, role, mobile, email, profile_image, language_code, status FROM users WHERE id = ?',
+      [req.user.id],
+    );
+
+    if (rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        message: 'User account no longer exists. Please sign in again.',
+        code: 'USER_DELETED',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { user: formatUser(rows[0]) },
+    });
+  } catch (error) {
+    console.error('Auth me error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching session',
+    });
+  }
+};
