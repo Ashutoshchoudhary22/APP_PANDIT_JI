@@ -4,6 +4,7 @@ require('dotenv').config();
 
 const initDb = require('./config/initDb');
 const authRoutes = require('./routes/authRoutes');
+const customerProfileRoutes = require('./routes/customerProfileRoutes');
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/customer-profiles', customerProfileRoutes);
 
 const PORT = process.env.PORT || 5300;
 

@@ -1,7 +1,29 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
+function getSmtpUser() {
+  return (process.env.SMTP_MAIL || process.env.SMTP_USER || '').trim();
+}
+
+function getSmtpPass() {
+  return (process.env.SMTP_PASSWORD || process.env.SMTP_PASS || '').trim();
+}
+
 function createTransporter() {
+  const smtpUser = getSmtpUser();
+  const smtpPass = getSmtpPass();
+  const smtpService = process.env.SMTP_SERVICE?.trim();
+
+  if (smtpService) {
+    return nodemailer.createTransport({
+      service: smtpService,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    });
+  }
+
   const port = Number(process.env.SMTP_PORT) || 587;
   const secure = process.env.SMTP_SECURE === 'true' || port === 465;
 
@@ -10,8 +32,8 @@ function createTransporter() {
     port,
     secure,
     auth: {
-      user: process.env.SMTP_USER?.trim(),
-      pass: process.env.SMTP_PASS?.trim(),
+      user: smtpUser,
+      pass: smtpPass,
     },
     tls: {
       rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false',
@@ -27,13 +49,9 @@ async function verifySmtpConnection() {
 }
 
 async function sendOtpEmail(to, name, otp) {
-  const smtpUser = process.env.SMTP_USER?.trim();
-  const smtpPass = process.env.SMTP_PASS?.trim();
-  const isConfigured =
-    smtpUser &&
-    smtpPass &&
-    !smtpUser.includes('your-email') &&
-    !smtpPass.includes('your-gmail');
+  const smtpUser = getSmtpUser();
+  const smtpPass = getSmtpPass();
+  const isConfigured = smtpUser && smtpPass;
 
   if (!isConfigured) {
     console.log(`[DEV] OTP for ${to}: ${otp}`);
@@ -69,7 +87,7 @@ async function sendOtpEmail(to, name, otp) {
 
     if (error.responseCode === 535) {
       console.error(
-        'SMTP login failed. Check SMTP_USER and SMTP_PASS in .env (use full email + correct email password from hosting panel).',
+        'SMTP login failed. Check SMTP_MAIL and SMTP_PASSWORD in .env (use Gmail App Password).',
       );
     }
 

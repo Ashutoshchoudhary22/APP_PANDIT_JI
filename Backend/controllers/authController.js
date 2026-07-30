@@ -14,6 +14,7 @@ function formatUser(user) {
   return {
     id: user.id,
     role: user.role,
+    accountType: user.role === 'customer' ? 'customer' : 'user',
     mobile: user.mobile,
     email: user.email,
     profileImage: user.profile_image,
@@ -22,11 +23,12 @@ function formatUser(user) {
   };
 }
 
-function createToken(user) {
+function createUserToken(user) {
   return jwt.sign(
     {
       id: user.id,
       role: user.role,
+      accountType: user.role === 'customer' ? 'customer' : 'user',
       mobile: user.mobile,
       email: user.email,
     },
@@ -35,9 +37,33 @@ function createToken(user) {
   );
 }
 
+async function findExistingUser(normalizedMobile, normalizedEmail) {
+  const [existingMobile] = await pool.query(
+    'SELECT id FROM users WHERE mobile = ?',
+    [normalizedMobile],
+  );
+
+  if (existingMobile.length > 0) {
+    return { conflict: 'Mobile number already registered' };
+  }
+
+  if (normalizedEmail) {
+    const [existingEmail] = await pool.query(
+      'SELECT id FROM users WHERE email = ?',
+      [normalizedEmail],
+    );
+
+    if (existingEmail.length > 0) {
+      return { conflict: 'Email already registered' };
+    }
+  }
+
+  return null;
+}
+
 exports.signup = async (req, res) => {
   try {
-    const { mobile, email, password, role = 'customer' } = req.body;
+    const { mobile, email, password, role } = req.body;
 
     if (!mobile?.trim() || !password) {
       return res.status(400).json({
@@ -55,30 +81,14 @@ exports.signup = async (req, res) => {
 
     const normalizedMobile = mobile.trim();
     const normalizedEmail = email?.trim().toLowerCase() || null;
-    const userRole = ['customer', 'pandit', 'admin'].includes(role) ? role : 'customer';
+    const accountType = role === 'pandit' ? 'pandit' : 'customer';
 
-    const [existingMobile] = await pool.query('SELECT id FROM users WHERE mobile = ?', [
-      normalizedMobile,
-    ]);
-
-    if (existingMobile.length > 0) {
+    const existing = await findExistingUser(normalizedMobile, normalizedEmail);
+    if (existing) {
       return res.status(409).json({
         success: false,
-        message: 'Mobile number already registered',
+        message: existing.conflict,
       });
-    }
-
-    if (normalizedEmail) {
-      const [existingEmail] = await pool.query('SELECT id FROM users WHERE email = ?', [
-        normalizedEmail,
-      ]);
-
-      if (existingEmail.length > 0) {
-        return res.status(409).json({
-          success: false,
-          message: 'Email already registered',
-        });
-      }
     }
 
     const otp = generateOtp();
@@ -87,9 +97,9 @@ exports.signup = async (req, res) => {
     await pool.query('DELETE FROM signup_otps WHERE mobile = ?', [normalizedMobile]);
 
     await pool.query(
-      `INSERT INTO signup_otps (mobile, email, password_hash, otp, expires_at)
-       VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))`,
-      [normalizedMobile, normalizedEmail, passwordHash, otp, OTP_EXPIRES_MINUTES],
+      `INSERT INTO signup_otps (mobile, email, password_hash, account_type, otp, expires_at)
+       VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))`,
+      [normalizedMobile, normalizedEmail, passwordHash, accountType, otp, OTP_EXPIRES_MINUTES],
     );
 
     if (normalizedEmail) {
@@ -101,7 +111,7 @@ exports.signup = async (req, res) => {
         data: {
           mobile: normalizedMobile,
           email: normalizedEmail,
-          role: userRole,
+          role: accountType,
           ...(process.env.NODE_ENV !== 'production' && mailResult.devMode && { otp }),
         },
       });
@@ -116,7 +126,7 @@ exports.signup = async (req, res) => {
       message: 'OTP generated. Please verify to complete signup.',
       data: {
         mobile: normalizedMobile,
-        role: userRole,
+        role: accountType,
         ...(process.env.NODE_ENV !== 'production' && { otp }),
       },
     });
@@ -131,7 +141,7 @@ exports.signup = async (req, res) => {
 
 exports.verifyOtp = async (req, res) => {
   try {
-    const { mobile, email, otp, role = 'customer' } = req.body;
+    const { mobile, email, otp } = req.body;
 
     if ((!mobile?.trim() && !email?.trim()) || !otp?.trim()) {
       return res.status(400).json({
@@ -142,15 +152,14 @@ exports.verifyOtp = async (req, res) => {
 
     const normalizedMobile = mobile?.trim();
     const normalizedEmail = email?.trim().toLowerCase();
-    const userRole = ['customer', 'pandit', 'admin'].includes(role) ? role : 'customer';
 
     const [rows] = await pool.query(
       normalizedMobile
-        ? `SELECT id, mobile, email, password_hash, otp
+        ? `SELECT id, mobile, email, password_hash, account_type, otp
            FROM signup_otps
            WHERE mobile = ? AND expires_at > NOW()
            ORDER BY created_at DESC LIMIT 1`
-        : `SELECT id, mobile, email, password_hash, otp
+        : `SELECT id, mobile, email, password_hash, account_type, otp
            FROM signup_otps
            WHERE email = ? AND expires_at > NOW()
            ORDER BY created_at DESC LIMIT 1`,
@@ -185,6 +194,8 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
+    const userRole = record.account_type === 'pandit' ? 'pandit' : 'customer';
+
     const [result] = await pool.query(
       `INSERT INTO users (role, mobile, email, password_hash, status)
        VALUES (?, ?, ?, ?, 'active')`,
@@ -200,11 +211,14 @@ exports.verifyOtp = async (req, res) => {
     );
 
     const user = formatUser(userRows[0]);
-    const token = createToken(userRows[0]);
+    const token = createUserToken(userRows[0]);
 
     return res.status(201).json({
       success: true,
-      message: 'Account verified and created successfully.',
+      message:
+        userRole === 'pandit'
+          ? 'Pandit account verified and created successfully.'
+          : 'Account verified and created successfully.',
       data: { user, token },
     });
   } catch (error) {
@@ -295,7 +309,7 @@ exports.login = async (req, res) => {
     const normalizedEmail = email?.trim().toLowerCase();
     const normalizedMobile = mobile?.trim();
 
-    const [rows] = await pool.query(
+    const [userRows] = await pool.query(
       normalizedMobile
         ? `SELECT id, role, mobile, email, password_hash, profile_image, language_code, status
            FROM users WHERE mobile = ?`
@@ -304,14 +318,14 @@ exports.login = async (req, res) => {
       [normalizedMobile || normalizedEmail],
     );
 
-    if (rows.length === 0) {
+    if (userRows.length === 0) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials',
       });
     }
 
-    const user = rows[0];
+    const user = userRows[0];
 
     if (user.status !== 'active') {
       return res.status(403).json({
@@ -331,14 +345,12 @@ exports.login = async (req, res) => {
 
     await pool.query('UPDATE users SET last_login_at = NOW() WHERE id = ?', [user.id]);
 
-    const token = createToken(user);
-
     return res.status(200).json({
       success: true,
       message: 'Login successful',
       data: {
         user: formatUser(user),
-        token,
+        token: createUserToken(user),
       },
     });
   } catch (error) {
@@ -364,21 +376,21 @@ exports.forgotPassword = async (req, res) => {
     const normalizedEmail = email?.trim().toLowerCase();
     const normalizedMobile = mobile?.trim();
 
-    const [rows] = await pool.query(
+    const [userRows] = await pool.query(
       normalizedMobile
         ? 'SELECT id, email FROM users WHERE mobile = ?'
         : 'SELECT id, email FROM users WHERE email = ?',
       [normalizedMobile || normalizedEmail],
     );
 
-    if (rows.length === 0) {
+    if (userRows.length === 0) {
       return res.status(200).json({
         success: true,
         message: 'If this account exists, a reset link has been sent',
       });
     }
 
-    const user = rows[0];
+    const user = userRows[0];
     const token = uuidv4();
 
     await pool.query(
@@ -429,21 +441,21 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    const [rows] = await pool.query(
-      `SELECT pr.id, pr.user_id
-       FROM password_resets pr
-       WHERE pr.token = ? AND pr.used = 0 AND pr.expires_at > NOW()`,
+    const [userResetRows] = await pool.query(
+      `SELECT id, user_id
+       FROM password_resets
+       WHERE token = ? AND used = 0 AND expires_at > NOW()`,
       [token],
     );
 
-    if (rows.length === 0) {
+    if (userResetRows.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired reset token',
       });
     }
 
-    const resetRecord = rows[0];
+    const resetRecord = userResetRows[0];
     const passwordHash = await bcrypt.hash(password, 10);
 
     await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [

@@ -16,65 +16,55 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useSignupMutation } from '@/hooks/use-auth';
+import { useLoginMutation } from '@/hooks/use-auth';
+import { AuthUser } from '@/services/auth.api';
 
-type SignUpScreenProps = {
-  onSignupSuccess?: (data: { mobile: string; email?: string }) => void;
-  onSignIn?: () => void;
+type SignInScreenProps = {
+  onLoginSuccess?: (user: AuthUser, token: string) => void;
+  onSignUp?: () => void;
+  onForgotPassword?: () => void;
   onSocialPress?: (provider: 'facebook' | 'x' | 'google') => void;
 };
 
-export function SignUpScreen({
-  onSignupSuccess,
-  onSignIn,
+export function SignInScreen({
+  onLoginSuccess,
+  onSignUp,
+  onForgotPassword,
   onSocialPress,
-}: SignUpScreenProps) {
+}: SignInScreenProps) {
   const insets = useSafeAreaInsets();
-  const [mobile, setMobile] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const signupMutation = useSignupMutation();
+  const loginMutation = useLoginMutation();
 
-  const handleSignUp = () => {
+  const handleSignIn = () => {
     setError('');
 
-    if (!mobile.trim() || !email.trim() || !password || !confirmPassword) {
-      setError('Please fill all fields');
+    if (!email.trim() || !password) {
+      setError('Email and password are required');
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    signupMutation.mutate(
+    loginMutation.mutate(
       {
-        mobile: mobile.trim(),
         email: email.trim().toLowerCase(),
         password,
       },
       {
         onSuccess: (response) => {
-          Alert.alert('OTP Sent', response.message);
-          onSignupSuccess?.({
-            mobile: response.data?.mobile || mobile.trim(),
-            email: response.data?.email || email.trim().toLowerCase(),
-          });
+          if (response.data?.user && response.data?.token) {
+            if (response.data.user.role !== 'pandit') {
+              setError('This app is for pandits only. Please use the customer app.');
+              return;
+            }
+            Alert.alert('Success', response.message);
+            onLoginSuccess?.(response.data.user, response.data.token);
+          }
         },
-        onError: (err) => {
-          setError(err.message);
-        },
+        onError: (err) => setError(err.message),
       },
     );
   };
@@ -93,11 +83,11 @@ export function SignUpScreen({
           <View style={styles.brandIcon}>
             <Text style={styles.brandIconText}>ॐ</Text>
           </View>
-          <Text style={styles.brandName}>My-Pandit</Text>
+          <Text style={styles.brandName}>My-Pandit Partner</Text>
         </View>
 
         <Text style={styles.heroTitle}>
-          Join the My-Pandit{'\n'}community today. ✨
+          Serve devotees with{'\n'}My-Pandit today. 🪔
         </Text>
       </LinearGradient>
 
@@ -114,27 +104,12 @@ export function SignUpScreen({
               { paddingBottom: Math.max(insets.bottom, 16) + 8 },
             ]}
           >
-            <Text style={styles.formTitle}>Create Your Account.</Text>
+            <Text style={styles.formTitle}>Pandit Sign In</Text>
             <Text style={styles.formSubtitle}>
-              Sign up to connect with trusted pandits and start your journey.
+              Sign in to manage bookings, puja requests and your profile.
             </Text>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-            <Text style={styles.label}>Mobile Number</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="call-outline" size={20} color="#9CA3AF" />
-              <TextInput
-                style={styles.input}
-                placeholder="9876543210"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="phone-pad"
-                maxLength={15}
-                value={mobile}
-                onChangeText={setMobile}
-                editable={!signupMutation.isPending}
-              />
-            </View>
 
             <Text style={styles.label}>Email Address</Text>
             <View style={styles.inputRow}>
@@ -148,7 +123,7 @@ export function SignUpScreen({
                 autoCorrect={false}
                 value={email}
                 onChangeText={setEmail}
-                editable={!signupMutation.isPending}
+                editable={!loginMutation.isPending}
               />
             </View>
 
@@ -162,7 +137,7 @@ export function SignUpScreen({
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
-                editable={!signupMutation.isPending}
+                editable={!loginMutation.isPending}
               />
               <Pressable onPress={() => setShowPassword((v) => !v)} hitSlop={8}>
                 <Ionicons
@@ -173,52 +148,35 @@ export function SignUpScreen({
               </Pressable>
             </View>
 
-            <Text style={styles.label}>Confirm Password</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="lock-closed-outline" size={20} color="#9CA3AF" />
-              <TextInput
-                style={styles.input}
-                placeholder="••••••••••••"
-                placeholderTextColor="#9CA3AF"
-                secureTextEntry={!showConfirmPassword}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                editable={!signupMutation.isPending}
-              />
-              <Pressable onPress={() => setShowConfirmPassword((v) => !v)} hitSlop={8}>
-                <Ionicons
-                  name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
-                  size={20}
-                  color="#9CA3AF"
-                />
-              </Pressable>
-            </View>
-
             <Pressable
               style={({ pressed }) => [
-                styles.signUpBtn,
-                (pressed || signupMutation.isPending) && styles.pressed,
-                signupMutation.isPending && styles.disabledBtn,
+                styles.signInBtn,
+                (pressed || loginMutation.isPending) && styles.pressed,
+                loginMutation.isPending && styles.disabledBtn,
               ]}
-              onPress={handleSignUp}
-              disabled={signupMutation.isPending}
+              onPress={handleSignIn}
+              disabled={loginMutation.isPending}
             >
-              {signupMutation.isPending ? (
+              {loginMutation.isPending ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <>
-                  <Text style={styles.signUpText}>Sign Up</Text>
-                  <Ionicons name="person-add-outline" size={20} color="#fff" />
+                  <Text style={styles.signInText}>Sign In</Text>
+                  <Ionicons name="log-in-outline" size={20} color="#fff" />
                 </>
               )}
             </Pressable>
 
             <Text style={styles.accountRow}>
-              Already have an account?{' '}
-              <Text style={styles.link} onPress={onSignIn}>
-                Sign In
+              New pandit on My-Pandit?{' '}
+              <Text style={styles.link} onPress={onSignUp}>
+                Sign Up
               </Text>
             </Text>
+
+            <Pressable onPress={onForgotPassword}>
+              <Text style={styles.forgot}>Forgot Password</Text>
+            </Pressable>
 
             <View style={styles.socialRow}>
               <Pressable
@@ -338,7 +296,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     paddingVertical: 0,
   },
-  signUpBtn: {
+  signInBtn: {
     marginTop: 28,
     height: 54,
     borderRadius: 27,
@@ -354,7 +312,7 @@ const styles = StyleSheet.create({
   disabledBtn: {
     opacity: 0.7,
   },
-  signUpText: {
+  signInText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
@@ -368,6 +326,13 @@ const styles = StyleSheet.create({
   link: {
     color: '#7C3AED',
     fontWeight: '700',
+  },
+  forgot: {
+    marginTop: 14,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#7C3AED',
   },
   socialRow: {
     marginTop: 28,

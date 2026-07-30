@@ -63,6 +63,7 @@ export function SignUpScreen({
         mobile: mobile.trim(),
         email: email.trim().toLowerCase(),
         password,
+        role: 'pandit',
       },
       {
         onSuccess: (response) => {
@@ -93,11 +94,11 @@ export function SignUpScreen({
           <View style={styles.brandIcon}>
             <Text style={styles.brandIconText}>ॐ</Text>
           </View>
-          <Text style={styles.brandName}>My-Pandit</Text>
+          <Text style={styles.brandName}>My-Pandit Partner</Text>
         </View>
 
         <Text style={styles.heroTitle}>
-          Join the My-Pandit{'\n'}community today. ✨
+          Join My-Pandit as{'\n'}a verified pandit. ✨
         </Text>
       </LinearGradient>
 
@@ -114,9 +115,9 @@ export function SignUpScreen({
               { paddingBottom: Math.max(insets.bottom, 16) + 8 },
             ]}
           >
-            <Text style={styles.formTitle}>Create Your Account.</Text>
+            <Text style={styles.formTitle}>Create Pandit Account</Text>
             <Text style={styles.formSubtitle}>
-              Sign up to connect with trusted pandits and start your journey.
+              Register to receive puja bookings and grow your spiritual services.
             </Text>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -214,7 +215,7 @@ export function SignUpScreen({
             </Pressable>
 
             <Text style={styles.accountRow}>
-              Already have an account?{' '}
+              Already registered?{' '}
               <Text style={styles.link} onPress={onSignIn}>
                 Sign In
               </Text>
